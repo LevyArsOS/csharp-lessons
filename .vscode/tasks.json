@@ -1,0 +1,71 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "install-dotnet-tools",
+      "type": "shell",
+      "command": "dotnet tool install -g dotnet-counters; dotnet tool install -g dotnet-dump; dotnet tool install -g dotnet-trace; dotnet tool install -g dotnet-gcdump",
+      "problemMatcher": [],
+      "detail": "Instala ferramentas de diagnóstico de memória do .NET"
+    },
+    {
+      "label": "memory-counters",
+      "type": "shell",
+      "command": "dotnet-counters monitor --process-id ${input:processId} --counters System.Runtime",
+      "problemMatcher": [],
+      "detail": "Monitora contadores de memória em tempo real"
+    },
+    {
+      "label": "gc-dump",
+      "type": "shell",
+      "command": "dotnet-gcdump collect --process-id ${input:processId} --output ${workspaceFolder}/gcdump.gcdump",
+      "problemMatcher": [],
+      "detail": "Coleta um GC dump para análise de memória"
+    },
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "dotnet build ${workspaceFolder}/CSharpLessons/CSharpLessons.csproj /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary",
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "build-release",
+      "type": "shell",
+      "command": "dotnet build ${workspaceFolder}/CSharpLessons/CSharpLessons.csproj -c Release /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "run-benchmarks",
+      "type": "shell",
+      "command": "dotnet run --project ${workspaceFolder}/CSharpLessons/CSharpLessons.csproj -c Release",
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "restore",
+      "type": "shell",
+      "command": "dotnet restore ${workspaceFolder}/CSharpLessons/CSharpLessons.csproj",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "dotnet clean ${workspaceFolder}/CSharpLessons/CSharpLessons.csproj",
+      "problemMatcher": "$msCompile"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "processId",
+      "type": "promptString",
+      "description": "Digite o Process ID (PID) do processo .NET"
+    }
+  ]
+}
