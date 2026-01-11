@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug CSharpLessons",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/CSharpLessons/bin/Debug/net9.0/CSharpLessons.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/CSharpLessons",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Run Benchmarks (Release)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-release",
+      "program": "${workspaceFolder}/CSharpLessons/bin/Release/net9.0/CSharpLessons.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/CSharpLessons",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": ".NET Core Attach",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}

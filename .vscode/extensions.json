@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "anysphere.csharp",
+    "jmrog.vscode-nuget-package-manager",
+    "editorconfig.editorconfig",
+    "eamodio.gitlens",
+    "dotjoshjohnson.xml"
+  ]
+}

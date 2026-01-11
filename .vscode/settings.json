@@ -1,0 +1,27 @@
+{
+  "dotnet.defaultSolution": "CSharpLessons.sln",
+  "editor.formatOnSave": true,
+  "dotnet.server.useOmnisharp": false,
+  "omnisharp.enableRoslynAnalyzers": true,
+  "omnisharp.enableEditorConfigSupport": true,
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  },
+  "files.associations": {
+    "*.csproj": "xml"
+  },
+  "terminal.integrated.env.osx": {
+    "PATH": "${env:HOME}/.dotnet:${env:HOME}/.dotnet/tools:${env:PATH}",
+    "DOTNET_ROOT": "${env:HOME}/.dotnet"
+  },
+  "terminal.integrated.env.linux": {
+    "PATH": "${env:HOME}/.dotnet:${env:HOME}/.dotnet/tools:${env:PATH}",
+    "DOTNET_ROOT": "${env:HOME}/.dotnet"
+  },
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:USERPROFILE}\\.dotnet;${env:USERPROFILE}\\.dotnet\\tools;${env:PATH}",
+    "DOTNET_ROOT": "${env:USERPROFILE}\\.dotnet"
+  },
+  "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true
+}
