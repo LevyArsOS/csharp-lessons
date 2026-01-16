@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 using CSharpLessons.Boxing.Data;
 using System.Collections;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CSharpLessons.Boxing
 {
@@ -17,6 +18,7 @@ namespace CSharpLessons.Boxing
         private List<Product> products = null!;
         private List<Temperature> temperatures = null!;
         private ArrayList arrayList = null!;
+        private int[] tupleData = null!;
 
         [GlobalSetup]
         public void Setup()
@@ -28,6 +30,7 @@ namespace CSharpLessons.Boxing
             products = new List<Product>(Size);
             temperatures = new List<Temperature>(Size);
             arrayList = new ArrayList(Size);
+            tupleData = new int[Size];
 
             var random = new Random(42);
             for (int i = 0; i < Size; i++)
@@ -39,6 +42,7 @@ namespace CSharpLessons.Boxing
                 products.Add(new Product { Id = i, Price = random.Next(1, 100) });
                 temperatures.Add(new Temperature { Celsius = random.NextDouble() * 100 });
                 arrayList.Add(withoutSpecializedOverrides[i]); // Boxing occurs here
+                tupleData[i] = random.Next(100);
             }
         }
 
@@ -303,6 +307,178 @@ namespace CSharpLessons.Boxing
         {
             // No boxing
             _ = typeof(T);
+        }
+
+        // ValueTuple vs Tuple benchmarks
+        [Benchmark]
+        public void TupleCreation()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                var tuple = Tuple.Create(tupleData[i], $"value{i}"); // Boxing when creating Tuple
+            }
+        }
+
+        [Benchmark]
+        public void ValueTupleCreation()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = (tupleData[i], $"value{i}"); // No boxing
+            }
+        }
+
+        [Benchmark]
+        public void TupleInList()
+        {
+            var list = new List<Tuple<int, string>>(Size);
+            for (int i = 0; i < Size; i++)
+            {
+                list.Add(Tuple.Create(tupleData[i], $"value{i}")); // Boxing when creating Tuple
+            }
+        }
+
+        [Benchmark]
+        public void ValueTupleInList()
+        {
+            var list = new List<(int, string)>(Size);
+            for (int i = 0; i < Size; i++)
+            {
+                list.Add((tupleData[i], $"value{i}")); // No boxing
+            }
+        }
+
+        [Benchmark]
+        public void TupleAsDictionaryKey()
+        {
+            var dict = new Dictionary<Tuple<int, int>, string>(Size);
+            for (int i = 0; i < Size; i++)
+            {
+                var key = Tuple.Create(tupleData[i], tupleData[i] + 1);
+                dict[key] = $"value{i}"; // Boxing when creating Tuple
+            }
+        }
+
+        [Benchmark]
+        public void ValueTupleAsDictionaryKey()
+        {
+            var dict = new Dictionary<(int, int), string>(Size);
+            for (int i = 0; i < Size; i++)
+            {
+                var key = (tupleData[i], tupleData[i] + 1);
+                dict[key] = $"value{i}"; // No boxing
+            }
+        }
+
+        [Benchmark]
+        public void TupleReturn()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = GetTuple(tupleData[i], $"value{i}"); // Boxing when creating Tuple
+            }
+        }
+
+        [Benchmark]
+        public void ValueTupleReturn()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = GetValueTuple(tupleData[i], $"value{i}"); // No boxing
+            }
+        }
+
+        private Tuple<int, string> GetTuple(int id, string name) => Tuple.Create(id, name);
+        private (int, string) GetValueTuple(int id, string name) => (id, name);
+
+        // ValueTask vs Task benchmarks
+        [Benchmark]
+        public async Task TaskWithSynchronousResult()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = await GetTaskSynchronous(tupleData[i]); // Allocates Task even with ready result
+            }
+        }
+
+        [Benchmark]
+        public async Task ValueTaskWithSynchronousResult()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = await GetValueTaskSynchronous(tupleData[i]); // No allocation - struct on stack
+            }
+        }
+
+        [Benchmark]
+        public async Task TaskWithAsyncResult()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = await GetTaskAsync(tupleData[i]); // Allocates Task
+            }
+        }
+
+        [Benchmark]
+        public async Task ValueTaskWithAsyncResult()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = await GetValueTaskAsync(tupleData[i]); // May allocate Task internally
+            }
+        }
+
+        [Benchmark]
+        public void TaskFromResult()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = Task.FromResult(tupleData[i]); // Allocates Task on heap
+            }
+        }
+
+        [Benchmark]
+        public void ValueTaskFromResult()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                _ = new ValueTask<int>(tupleData[i]); // No allocation - struct on stack
+            }
+        }
+
+        [Benchmark]
+        public async Task TaskInList()
+        {
+            var tasks = new List<Task<int>>(Size);
+            for (int i = 0; i < Size; i++)
+            {
+                tasks.Add(GetTaskSynchronous(tupleData[i])); // Allocates Task
+            }
+            await Task.WhenAll(tasks);
+        }
+
+        [Benchmark]
+        public async Task ValueTaskInList()
+        {
+            var valueTasks = new List<ValueTask<int>>(Size);
+            for (int i = 0; i < Size; i++)
+            {
+                valueTasks.Add(GetValueTaskSynchronous(tupleData[i])); // No allocation
+            }
+            await Task.WhenAll(valueTasks.Select(vt => vt.AsTask()));
+        }
+
+        private Task<int> GetTaskSynchronous(int value) => Task.FromResult(value);
+        private ValueTask<int> GetValueTaskSynchronous(int value) => new ValueTask<int>(value);
+        private async Task<int> GetTaskAsync(int value)
+        {
+            await Task.Yield();
+            return value;
+        }
+        private async ValueTask<int> GetValueTaskAsync(int value)
+        {
+            await Task.Yield();
+            return value;
         }
     }
 }

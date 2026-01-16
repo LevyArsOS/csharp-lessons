@@ -29,6 +29,9 @@
 - [Events and Delegates](#events-and-delegates)
 - [LINQ and Collection Operations](#linq-and-collection-operations)
 - [Serialization](#serialization)
+- [Modern Alternatives](#modern-alternatives)
+  - [ValueTuple vs Tuple](#valuetuple-vs-tuple)
+  - [ValueTask vs Task](#valuetask-vs-task)
 - [Tips for Identifying Boxing in Code](#tips-for-identifying-boxing-in-code)
 - [Summary](#summary)
 - [References](#references)
@@ -528,7 +531,7 @@ The difference between the generic and non-generic versions is significant in te
 
 String interpolation with `$""` can cause boxing when value types are interpolated directly. The C# compiler converts values to `object` internally before formatting them. To avoid this, explicitly convert to string using `.ToString()`.
 
-> **Note:** In some cases, the compiler may optimize automatically, but it's not guaranteed. For high-performance code, it's better to be explicit.
+> **Note:** Recent versions of the C# compiler (including C# 10+ with `InterpolatedStringHandler`) may optimize some string interpolation cases, reducing allocations. However, boxing can still occur when value types are passed directly in interpolation. For high-performance code, it's recommended to be explicit and use `.ToString()` to ensure no boxing occurs.
 
 ```cs
     int value = 42;
@@ -731,6 +734,149 @@ Serializers that work with `object` can cause boxing. Use generic types when pos
     var xmlSerializer = new System.Xml.Serialization.XmlSerializer(typeof(int));
     // Using specific types avoids boxing
 ```
+
+## Modern Alternatives
+
+C# offers modern alternatives that avoid boxing and improve performance. Two of the most important are `ValueTuple` (instead of `Tuple`) and `ValueTask` (instead of `Task`).
+
+### ValueTuple vs Tuple
+
+`Tuple` is a class (reference type) that causes boxing when storing value types. `ValueTuple` is a struct (value type) that avoids boxing and unnecessary allocations.
+
+```cs
+    // Tuple (class) - causes boxing and heap allocations
+    Tuple<int, string> tupleWithBoxing = Tuple.Create(42, "test");
+    // Boxing occurs when storing int in Tuple class
+    
+    // ValueTuple (struct) - no boxing, stack allocation
+    (int, string) valueTupleWithoutBoxing = (42, "test");
+    // No boxing - value types stored directly in struct
+    
+    // Example: returning multiple values
+    // With Tuple - boxing and heap allocation
+    Tuple<int, float> GetDataWithBoxing()
+    {
+        int id = 42;
+        float velocity = 10.5f;
+        return Tuple.Create(id, velocity); // Boxing when creating Tuple
+    }
+    
+    // With ValueTuple - no boxing, stack allocation
+    (int, float) GetDataWithoutBoxing()
+    {
+        int id = 42;
+        float velocity = 10.5f;
+        return (id, velocity); // No boxing
+    }
+    
+    // Example: using in collections
+    var listWithBoxing = new List<Tuple<int, string>>();
+    listWithBoxing.Add(Tuple.Create(1, "a")); // Boxing when creating Tuple
+    
+    var listWithoutBoxing = new List<(int, string)>();
+    listWithoutBoxing.Add((1, "a")); // No boxing
+    
+    // Example: deconstruction
+    var tuple = Tuple.Create(42, "test");
+    var (id, name) = tuple; // Boxing already occurred when creating tuple
+    
+    var valueTuple = (42, "test");
+    var (id2, name2) = valueTuple; // No boxing
+    
+    // Example: passing as parameter
+    void ProcessTuple(Tuple<int, string> tuple) { } // Boxing when passing
+    void ProcessValueTuple((int, string) valueTuple) { } // No boxing
+    
+    // Example: using as key in Dictionary
+    var dictWithBoxing = new Dictionary<Tuple<int, int>, string>();
+    dictWithBoxing[Tuple.Create(1, 2)] = "value"; // Boxing when creating Tuple
+    
+    var dictWithoutBoxing = new Dictionary<(int, int), string>();
+    dictWithoutBoxing[(1, 2)] = "value"; // No boxing
+```
+
+**Summary:**
+
+- **`Tuple`**: Class, causes boxing, allocates on heap, slower
+- **`ValueTuple`**: Struct, no boxing, allocates on stack, faster
+- **Recommendation**: Always use `ValueTuple` (syntax `(int, string)`) instead of `Tuple` for better performance
+
+### ValueTask vs Task
+
+`Task` is a class that always allocates on the heap, even when the result is already available. `ValueTask` is a struct that can avoid allocations when the result is synchronous or already available.
+
+```cs
+    using System.Threading.Tasks;
+    
+    // Task (class) - always allocates on heap
+    Task<int> GetDataWithAllocation()
+    {
+        int result = 42;
+        return Task.FromResult(result); // Allocates Task on heap, even with ready result
+    }
+    
+    // ValueTask (struct) - avoids allocation when result is already available
+    ValueTask<int> GetDataWithoutAllocation()
+    {
+        int result = 42;
+        return new ValueTask<int>(result); // No allocation - struct on stack
+    }
+    
+    // Example: async method that can return synchronous result
+    async Task<int> ProcessWithTask()
+    {
+        // If result is already available, still allocates Task
+        if (cache.TryGetValue(key, out var value))
+            return value; // Allocates Task even with ready result
+        
+        return await SomeAsyncOperation(); // Allocates Task
+    }
+    
+    async ValueTask<int> ProcessWithValueTask()
+    {
+        // If result is already available, no allocation
+        if (cache.TryGetValue(key, out var value))
+            return value; // No allocation - returns ValueTask struct
+        
+        return await SomeAsyncOperation(); // May allocate Task internally if necessary
+    }
+    
+    // Example: operations that frequently complete synchronously
+    ValueTask<string> ReadStringAsync()
+    {
+        // If data is already in buffer, returns without allocation
+        if (buffer.Length > 0)
+            return new ValueTask<string>(buffer.ToString()); // No allocation
+        
+        // Otherwise, delegates to real async operation
+        return new ValueTask<string>(ReadStringAsyncInternal());
+    }
+    
+    // Example: using in loops
+    var tasksWithAllocation = new List<Task<int>>();
+    for (int i = 0; i < 1000; i++)
+    {
+        tasksWithAllocation.Add(GetDataWithAllocation()); // 1000 heap allocations
+    }
+    
+    var valueTasksWithoutAllocation = new List<ValueTask<int>>();
+    for (int i = 0; i < 1000; i++)
+    {
+        valueTasksWithoutAllocation.Add(GetDataWithoutAllocation()); // No allocations (structs on stack)
+    }
+    
+    // Example: await works equally
+    int result1 = await GetDataWithAllocation(); // Works
+    int result2 = await GetDataWithoutAllocation(); // Works equally
+```
+
+**Summary:**
+
+- **`Task`**: Always allocates on heap, even with synchronous result
+- **`ValueTask`**: Avoids allocation when result is already available, may allocate `Task` internally when necessary
+- **Recommendation**: Use `ValueTask` when the method frequently returns synchronous or already available results (cache, validation, etc.). Use `Task` for operations that are always asynchronous.
+
+> **Note:** `ValueTask` should not be used in loops with multiple `await` calls. If you need to await the same `ValueTask` more than once, convert to `Task` first using `.AsTask()`.
 
 ## Tips for Identifying Boxing in Code
 
