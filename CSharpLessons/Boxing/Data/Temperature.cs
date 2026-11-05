@@ -8,7 +8,7 @@ namespace CSharpLessons.Boxing.Data
         public int CompareTo(Temperature other) => Celsius.CompareTo(other.Celsius);
 
         // IComparable - WITH boxing (parameter is object)
-        int IComparable.CompareTo(object obj)
+        int IComparable.CompareTo(object? obj)
         {
             if (obj is Temperature other)
                 return CompareTo(other);
