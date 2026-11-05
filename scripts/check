@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Build the solution with warnings as errors and run the unit tests. Benchmarks are not run here.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+command -v dotnet >/dev/null || { echo "dotnet SDK not found (see global.json)" >&2; exit 1; }
+dotnet restore --nologo
+dotnet build --no-restore --nologo -warnaserror -c Release
+dotnet test --no-build --nologo -c Release
