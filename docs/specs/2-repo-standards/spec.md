@@ -1,6 +1,6 @@
 # 2: repo standards
 
-Status: Draft
+Status: Approved
 Type: feature
 Created: 2026-11-05
 
