@@ -1,9 +1,9 @@
-# EditorConfig para projetos .NET
+# EditorConfig for .NET projects
 # https://editorconfig.org
 
 root = true
 
-# Configurações para todos os arquivos
+# All files
 [*]
 indent_style = space
 indent_size = 4
@@ -12,45 +12,45 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-# Arquivos C#
+# C# files
 [*.cs]
 indent_size = 4
 
-# Convenções de código C#
+# C# code conventions
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
 
-# Preferências de estilo
+# Style preferences
 csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = true:suggestion
 
-# Preferências de expressão
+# Expression preferences
 csharp_style_expression_bodied_methods = when_on_single_line:suggestion
 csharp_style_expression_bodied_constructors = false:suggestion
 csharp_style_expression_bodied_properties = true:suggestion
 
-# Preferências de namespace
+# Namespace preferences
 csharp_style_namespace_declarations = file_scoped:suggestion
 
-# Formatação
+# Formatting
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
 
-# Arquivos XML (csproj, props, targets)
+# XML files (csproj, props, targets)
 [*.{csproj,props,targets}]
 indent_size = 2
 
-# Arquivos JSON
+# JSON files
 [*.json]
 indent_size = 2
 
-# Arquivos Markdown
+# Markdown files
 [*.md]
 trim_trailing_whitespace = false
 
-# Arquivos de solução
+# Solution files
 [*.sln]
 indent_style = tab

@@ -6,21 +6,21 @@
       "type": "shell",
       "command": "dotnet tool install -g dotnet-counters; dotnet tool install -g dotnet-dump; dotnet tool install -g dotnet-trace; dotnet tool install -g dotnet-gcdump",
       "problemMatcher": [],
-      "detail": "Instala ferramentas de diagnóstico de memória do .NET"
+      "detail": "Install the .NET memory diagnostic tools"
     },
     {
       "label": "memory-counters",
       "type": "shell",
       "command": "dotnet-counters monitor --process-id ${input:processId} --counters System.Runtime",
       "problemMatcher": [],
-      "detail": "Monitora contadores de memória em tempo real"
+      "detail": "Monitor memory counters in real time"
     },
     {
       "label": "gc-dump",
       "type": "shell",
       "command": "dotnet-gcdump collect --process-id ${input:processId} --output ${workspaceFolder}/gcdump.gcdump",
       "problemMatcher": [],
-      "detail": "Coleta um GC dump para análise de memória"
+      "detail": "Collect a GC dump for memory analysis"
     },
     {
       "label": "build",
@@ -65,7 +65,7 @@
     {
       "id": "processId",
       "type": "promptString",
-      "description": "Digite o Process ID (PID) do processo .NET"
+      "description": "Enter the process ID (PID) of the .NET process"
     }
   ]
 }
