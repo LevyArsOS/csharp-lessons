@@ -29,7 +29,7 @@ Ship v0.1.0: `main` equals `develop`, with a generated changelog and a signed ta
 ## Acceptance criteria
 - [ ] AC1: Given the release branch, when `scripts/check` runs, then build and tests pass.
 - [ ] AC2: Given `main` after the merge, when compared with `develop`, then no commit is missing.
-- [ ] AC3: Given `CHANGELOG.md`, when read, then the `0.1.0` section lists the standards work and the nullability fix.
+- [x] AC3: Given `CHANGELOG.md`, when read, then the `0.1.0` section lists the standards work and the nullability fix.
 
 ## Verified context
 Base commit: e05585f (`develop`, merge of #3).
@@ -37,7 +37,7 @@ Base commit: e05585f (`develop`, merge of #3).
 | Fact | Command | Result |
 |---|---|---|
 | No tags | `git tag -l` | empty |
-| `feat` present since start | `git log --format=%s \| grep -c '^feat'` | 1 |
+| No `feat` commit yet (PR #3 was chore/test/docs) | `git log --format=%s --no-merges \| grep -c '^feat'` | 0 |
 
 ## Design
 Standard gitflow release through the workspace tools: `bin/task-start release`, `bin/changelog`, `bin/task-pr`, tag after merge. No alternatives considered.
@@ -64,7 +64,7 @@ N/A: release only.
 ## Decisions
 | ID | Decision | Status | Default / rationale |
 |---|---|---|---|
-| D1 | Version 0.1.0 | closed | SemVer from commits: feat, no breaking change, no prior tag |
+| D1 | Version 0.1.0 | closed | First tagged version of a 0.x project; commits are chore/test/docs/fix, so a strict SemVer bump would be 0.0.1, but 0.1.0 marks the start of the process |
 
 ## Gaps
 | Gap | Workaround used | Impact |
