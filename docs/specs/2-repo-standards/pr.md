@@ -12,13 +12,13 @@ Adopts the repository standards so every lesson lands through a reviewed, tested
 - Add CI (`check`, `hygiene`, `secrets` jobs, actions pinned by SHA, .NET 9 via `global.json`), dependabot (actions + nuget), PR template, `CONTRIBUTING.md`, `SECURITY.md`, `GLOSSARY.md`.
 - Add `scripts/check` (restore, build with `-warnaserror`, test) and `CSharpLessons.Tests` with one behaviour test per `Boxing/Data` type; register it in the solution.
 - README: build/test commands and contribution pointers.
-- Fix two nullability mismatches in `Counter` and `Temperature` surfaced by `-warnaserror`.
+- Fix two nullability mismatches in `Counter` and `Temperature` surfaced by `-warnaserror`; pin a full SDK version in `global.json`.
 
 ## Evidence
 - Before: `git ls-files '*.user'` → `CSharpLessons.sln.DotSettings.user`; `grep -cP '[^\x00-\x7F]' .editorconfig .vscode/tasks.json` → 10; no test project, no CI.
 - After: `git ls-files '*.user'` → empty; the grep → 0; `bin/pin-actions --check` → clean; `ci.yml` parses; content scan of the tree → clean.
 - `scripts/check` (SDK 9.0.320): first run failed the build with two nullability errors in the existing examples (`Counter.CompareTo(object)`, `Temperature.CompareTo(object)`) because of `-warnaserror`; fixed to `object?`. Second run: `Build succeeded`, `Passed! - Failed: 0, Passed: 7, Skipped: 0, Total: 7`.
-- Pending: the CI `check` job on this PR (AC2).
+- CI on this PR: `check`, `hygiene` and `secrets` green (first run failed in `setup-dotnet`: `global.json` had `9.0.0`, not a full SDK version; pinned `9.0.100` with `rollForward: latestFeature`).
 
 ## Tests
 | Level | Result |
@@ -37,7 +37,7 @@ Door: two-way (revert the merge commit restores everything; no data, API or exte
 Blast radius: repository tooling and CI only; lesson code and tutorials untouched.
 
 ## Checklist
-- [x] Spec acceptance criteria met (AC1, AC3, AC4, AC5 locally; AC2 by the CI run on this PR)
+- [x] Spec acceptance criteria met
 - [x] Tests added/updated, all passing
 - [x] Docs and CHANGELOG updated where relevant
 - [x] No secrets or sensitive data
