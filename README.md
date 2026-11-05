@@ -8,6 +8,16 @@ This project is motivated by learning through teaching, following the **[Feynman
 
 This is a C# repository to store C# lessons with practical examples and benchmarks. Each folder within the project represents a different topic with practical examples and benchmarks. This approach helps understand concepts through real-world scenarios and performance comparisons.
 
+## Building and testing
+
+```bash
+scripts/check                                   # build (warnings as errors) + unit tests; needs the .NET 9 SDK
+dotnet run --project CSharpLessons -c Release   # run the benchmarks (minutes)
+```
+
+Changes land through pull requests to `develop`; see [CONTRIBUTING.md](CONTRIBUTING.md) and
+the shared vocabulary in [GLOSSARY.md](GLOSSARY.md).
+
 ## Topics
 
 - Boxing [English](CSharpLessons/Boxing/Tutorial/en.md) [Português](CSharpLessons/Boxing/Tutorial/pt-br.md)
@@ -19,7 +29,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Author
 
-**LevyArsSO**
+**LevyArsOS**
 
 ---
 
