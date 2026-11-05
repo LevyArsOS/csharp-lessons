@@ -35,9 +35,9 @@ Every lesson lands through a pull request that CI has built and tested, with the
 ## Acceptance criteria
 - [ ] AC1: Given a clean clone with the .NET 9 SDK, when `scripts/check` runs, then the solution builds with zero warnings and all tests pass.
 - [ ] AC2: Given a pull request, when CI runs, then the `check`, `hygiene` and `secrets` jobs succeed.
-- [ ] AC3: Given the tracked files, when listed, then no `*.user` file is present and `.gitignore` contains `*.user`.
+- [x] AC3: Given the tracked files, when listed, then no `*.user` file is present and `.gitignore` contains `*.user`.
 - [ ] AC4: Given `CSharpLessons.Tests`, when run, then one test per `Boxing/Data` type passes.
-- [ ] AC5: Given `.editorconfig` and `.vscode/tasks.json`, when read, then every comment is in English.
+- [x] AC5: Given `.editorconfig` and `.vscode/tasks.json`, when read, then every comment is in English.
 
 ## Verified context
 Base commit: a28f114 (`master`, renamed locally to `main`).
