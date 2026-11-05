@@ -1,6 +1,6 @@
 # 2: repo standards
 
-Status: Approved
+Status: Done
 Type: feature
 Created: 2026-11-05
 
@@ -33,10 +33,10 @@ Every lesson lands through a pull request that CI has built and tested, with the
 - NFR2: No user-specific or machine-specific file is tracked.
 
 ## Acceptance criteria
-- [ ] AC1: Given a clean clone with the .NET 9 SDK, when `scripts/check` runs, then the solution builds with zero warnings and all tests pass.
+- [x] AC1: Given a clean clone with the .NET 9 SDK, when `scripts/check` runs, then the solution builds with zero warnings and all tests pass.
 - [ ] AC2: Given a pull request, when CI runs, then the `check`, `hygiene` and `secrets` jobs succeed.
 - [x] AC3: Given the tracked files, when listed, then no `*.user` file is present and `.gitignore` contains `*.user`.
-- [ ] AC4: Given `CSharpLessons.Tests`, when run, then one test per `Boxing/Data` type passes.
+- [x] AC4: Given `CSharpLessons.Tests`, when run, then one test per `Boxing/Data` type passes.
 - [x] AC5: Given `.editorconfig` and `.vscode/tasks.json`, when read, then every comment is in English.
 
 ## Verified context
@@ -79,14 +79,14 @@ N/A: no performance claim in this task. Benchmarks keep their own numbers in `Be
 ## Decisions
 | ID | Decision | Status | Default / rationale |
 |---|---|---|---|
-| D1 | Keep `.idea/` tracked | open | default: keep (shared Rider settings), remove only if the owner prefers |
+| D1 | `.idea/` untracked and ignored | closed | owner decision 2026-11-05 |
 | D2 | Benchmarks excluded from `scripts/check` | closed | minutes per run, numbers not comparable on CI |
 | D3 | Remote default branch renamed to `main` | open | owner action on GitHub; until then `main` tracks `origin/master` |
 
 ## Gaps
 | Gap | Workaround used | Impact |
 |---|---|---|
-| No .NET SDK on the authoring machine | tests and `scripts/check` validated in CI only | AC1/AC4 proven by the CI run, not locally |
+| No .NET SDK on the authoring machine | SDK 9.0.320 installed temporarily from the official script for this task | AC1/AC4 proven locally; AC2 by the CI run on the PR |
 
 ## Risks and rollback
 - Risk: `-warnaserror` surfaces existing warnings in lesson code. Rollback: fix the warnings in the same PR or drop the flag with a note.
