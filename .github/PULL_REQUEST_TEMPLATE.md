@@ -1,5 +1,5 @@
 ## Summary
-<!-- What changed and why. Link the spec in docs/specs/. -->
+<!-- What changed and why. Reference the issue (Closes #N / Refs: ABC-123). -->
 
 ## Tests
 <!-- Commands run, results and coverage. -->
