@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using BenchmarkDotNet.Running;
-using CSharpLessons.Boxing.Data;
+﻿using BenchmarkDotNet.Running;
 
 namespace CSharpLessons
 {
@@ -8,9 +6,8 @@ namespace CSharpLessons
     {
         public static void Main(string[] args)
         {
-            // Run the benchmarks
-            var summary = BenchmarkRunner.Run<Boxing.Benchmark>();
-
+            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
         }
     }
 }
+

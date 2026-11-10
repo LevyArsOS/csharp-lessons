@@ -33,6 +33,8 @@ recognize problem occurrences. Another motivation is to provide content with exp
 | Lesson | Tutorial | Benchmark |
 |---|---|---|
 | Boxing | [English](CSharpLessons/Boxing/Tutorial/en.md) · [Português](CSharpLessons/Boxing/Tutorial/pt-br.md) | [Results](CSharpLessons/Boxing/Benchmark.md) |
+| Struct vs Class | [English](CSharpLessons/StructVsClass/Tutorial/en.md) · [Português](CSharpLessons/StructVsClass/Tutorial/pt-br.md) | [Results](CSharpLessons/StructVsClass/Benchmark.md) |
+
 
 ## Getting started
 
