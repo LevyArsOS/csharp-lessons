@@ -8,3 +8,4 @@ riderModule.iml
 *.suo
 .vs/
 .idea/
+BenchmarkDotNet.Artifacts/
