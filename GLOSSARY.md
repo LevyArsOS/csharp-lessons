@@ -10,3 +10,7 @@ exactly; a concept that needs a sentence to explain gets an entry here instead.
 | Benchmark | A BenchmarkDotNet class measuring the lesson's scenarios; run on demand, never in `scripts/check` | A unit test |
 | Boxing | Wrapping a value type in a heap object when it is treated as `object` or a non-generic interface | Casting between value types |
 | Specialized override | A struct implementing `IEquatable<T>` / `IComparable<T>` so equality and ordering avoid boxing | Overriding `Equals(object)` alone |
+| Value type | A data type stored inline where declared without heap metadata overhead (e.g. `struct`) | A reference type |
+| Reference type | A data type stored on the managed heap with an object header and method table pointer (e.g. `class`) | A value type |
+| Inline allocation | Storing struct fields directly in stack memory or consecutively inside an array without separate heap allocations | Heap allocation with pointers |
+
