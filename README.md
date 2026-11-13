@@ -35,6 +35,7 @@ recognize problem occurrences. Another motivation is to provide content with exp
 | Boxing | [English](CSharpLessons/Boxing/Tutorial/en.md) · [Português](CSharpLessons/Boxing/Tutorial/pt-br.md) | [Results](CSharpLessons/Boxing/Benchmark.md) |
 | Struct vs Class | [English](CSharpLessons/StructVsClass/Tutorial/en.md) · [Português](CSharpLessons/StructVsClass/Tutorial/pt-br.md) | [Results](CSharpLessons/StructVsClass/Benchmark.md) |
 | Object Pooling | [English](CSharpLessons/ObjectPooling/Tutorial/en.md) · [Português](CSharpLessons/ObjectPooling/Tutorial/pt-br.md) | [Results](CSharpLessons/ObjectPooling/Benchmark.md) |
+| Hot-Path Allocations | [English](CSharpLessons/HotPathAllocations/Tutorial/en.md) · [Português](CSharpLessons/HotPathAllocations/Tutorial/pt-br.md) | [Results](CSharpLessons/HotPathAllocations/Benchmark.md) |
 
 
 ## Getting started
