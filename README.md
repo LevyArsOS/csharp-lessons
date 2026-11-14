@@ -37,6 +37,7 @@ recognize problem occurrences. Another motivation is to provide content with exp
 | Object Pooling | [English](CSharpLessons/ObjectPooling/Tutorial/en.md) · [Português](CSharpLessons/ObjectPooling/Tutorial/pt-br.md) | [Results](CSharpLessons/ObjectPooling/Benchmark.md) |
 | Hot-Path Allocations | [English](CSharpLessons/HotPathAllocations/Tutorial/en.md) · [Português](CSharpLessons/HotPathAllocations/Tutorial/pt-br.md) | [Results](CSharpLessons/HotPathAllocations/Benchmark.md) |
 | Data Locality | [English](CSharpLessons/DataLocality/Tutorial/en.md) · [Português](CSharpLessons/DataLocality/Tutorial/pt-br.md) | [Results](CSharpLessons/DataLocality/Benchmark.md) |
+| SoA vs AoS (SIMD) | [English](CSharpLessons/SoaVsAos/Tutorial/en.md) · [Português](CSharpLessons/SoaVsAos/Tutorial/pt-br.md) | [Results](CSharpLessons/SoaVsAos/Benchmark.md) |
 
 
 ## Getting started
