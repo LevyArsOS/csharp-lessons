@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com), versioning: [SemVer](https://semver.org).
 
+## [0.2.0](https://github.com/LevyArsOS/csharp-lessons/compare/v0.1.1...v0.2.0) - 2026-11-14
+
+### Added
+- **soa-vs-aos:** add AoS, SoA scalar, and SoA SIMD particle integrators [#18] (d53b1a1)
+- **data-locality:** add ParticleClass, ParticleStruct and ParticleUpdateSimulator [#17] (7abad17)
+- **hot-path-allocations:** add Entity, EntityWorld and HotPathQueries [#16] (c7e1a51)
+- **object-pooling:** add Projectile, IObjectPool, ObjectPool and simulation [#15] (f87ce6f)
+- **struct-vs-class:** add benchmark and performance analysis [#14] (fc08699)
+
+### Documentation
+- **soa-vs-aos:** add benchmark report, bilingual tutorials, and glossary [#18] (ed7b6ef)
+- **data-locality:** add benchmark results, tutorials, README and glossary entries [#17] (3d01848)
+- **hot-path-allocations:** add benchmark results, tutorials, README and glossary entries [#16] (024f204)
+- **object-pooling:** add benchmark results, tutorials, README and glossary entries [#15] (03e44ed)
+- **struct-vs-class:** update topics table and glossary [#14] (deaa394)
+
 ## [0.1.1](https://github.com/LevyArsOS/csharp-lessons/compare/v0.1.0...v0.1.1) - 2026-11-05
 
 ### Documentation
