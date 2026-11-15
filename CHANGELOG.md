@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com), versioning: [SemVer](https://semver.org).
 
+## [0.3.0](https://github.com/LevyArsOS/csharp-lessons/compare/v0.2.0...v0.3.0) - 2026-11-15
+
+### Added
+- **string-allocations:** add CombatTextFormatter implementations [#19] (8be6abf)
+
+### Documentation
+- **readme:** organize topics into learning paths and update glossary [#43] (b726ed7)
+- **readme:** document BenchmarkDotNet disassembly and memory CLI flags [#44] (61f3aa3)
+- **string-allocations:** add benchmark results, bilingual tutorials, and glossary [#19] (126aede)
+
 ## [0.2.0](https://github.com/LevyArsOS/csharp-lessons/compare/v0.1.1...v0.2.0) - 2026-11-14
 
 ### Added
