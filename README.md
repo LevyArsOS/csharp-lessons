@@ -30,15 +30,32 @@ recognize problem occurrences. Another motivation is to provide content with exp
 
 ## Topics
 
-| Lesson | Tutorial | Benchmark |
-|---|---|---|
-| Boxing | [English](CSharpLessons/Boxing/Tutorial/en.md) · [Português](CSharpLessons/Boxing/Tutorial/pt-br.md) | [Results](CSharpLessons/Boxing/Benchmark.md) |
-| Struct vs Class | [English](CSharpLessons/StructVsClass/Tutorial/en.md) · [Português](CSharpLessons/StructVsClass/Tutorial/pt-br.md) | [Results](CSharpLessons/StructVsClass/Benchmark.md) |
-| Object Pooling | [English](CSharpLessons/ObjectPooling/Tutorial/en.md) · [Português](CSharpLessons/ObjectPooling/Tutorial/pt-br.md) | [Results](CSharpLessons/ObjectPooling/Benchmark.md) |
-| Hot-Path Allocations | [English](CSharpLessons/HotPathAllocations/Tutorial/en.md) · [Português](CSharpLessons/HotPathAllocations/Tutorial/pt-br.md) | [Results](CSharpLessons/HotPathAllocations/Benchmark.md) |
-| Data Locality | [English](CSharpLessons/DataLocality/Tutorial/en.md) · [Português](CSharpLessons/DataLocality/Tutorial/pt-br.md) | [Results](CSharpLessons/DataLocality/Benchmark.md) |
-| SoA vs AoS (SIMD) | [English](CSharpLessons/SoaVsAos/Tutorial/en.md) · [Português](CSharpLessons/SoaVsAos/Tutorial/pt-br.md) | [Results](CSharpLessons/SoaVsAos/Benchmark.md) |
-| String Allocations | [English](CSharpLessons/StringAllocations/Tutorial/en.md) · [Português](CSharpLessons/StringAllocations/Tutorial/pt-br.md) | [Results](CSharpLessons/StringAllocations/Benchmark.md) |
+Lessons are organized into progressive learning paths—starting from allocation mechanics and GC pressure, moving to CPU cache layout and SIMD vectorization, and continuing to dispatch and concurrency.
+
+### 1. Memory & Allocations
+
+| Lesson | Tutorial | Benchmark | Focus |
+|---|---|---|---|
+| Boxing | [English](CSharpLessons/Boxing/Tutorial/en.md) · [Português](CSharpLessons/Boxing/Tutorial/pt-br.md) | [Results](CSharpLessons/Boxing/Benchmark.md) | Value-type boxing on heap & `IEquatable<T>` |
+| Struct vs Class | [English](CSharpLessons/StructVsClass/Tutorial/en.md) · [Português](CSharpLessons/StructVsClass/Tutorial/pt-br.md) | [Results](CSharpLessons/StructVsClass/Benchmark.md) | Inline `readonly struct` vs 24 B heap objects |
+| Object Pooling | [English](CSharpLessons/ObjectPooling/Tutorial/en.md) · [Português](CSharpLessons/ObjectPooling/Tutorial/pt-br.md) | [Results](CSharpLessons/ObjectPooling/Benchmark.md) | `ObjectPool<T>` reuse & zero steady-state GC |
+| Hot-Path Allocations | [English](CSharpLessons/HotPathAllocations/Tutorial/en.md) · [Português](CSharpLessons/HotPathAllocations/Tutorial/pt-br.md) | [Results](CSharpLessons/HotPathAllocations/Benchmark.md) | `NonAlloc` scratch buffers vs per-frame LINQ |
+| String Allocations | [English](CSharpLessons/StringAllocations/Tutorial/en.md) · [Português](CSharpLessons/StringAllocations/Tutorial/pt-br.md) | [Results](CSharpLessons/StringAllocations/Benchmark.md) | `Span<char>` `TryFormat` & lookup tables |
+
+### 2. Data Layout & SIMD
+
+| Lesson | Tutorial | Benchmark | Focus |
+|---|---|---|---|
+| Data Locality | [English](CSharpLessons/DataLocality/Tutorial/en.md) · [Português](CSharpLessons/DataLocality/Tutorial/pt-br.md) | [Results](CSharpLessons/DataLocality/Benchmark.md) | Contiguous `struct[]` vs scattered `List<class>` |
+| SoA vs AoS (SIMD) | [English](CSharpLessons/SoaVsAos/Tutorial/en.md) · [Português](CSharpLessons/SoaVsAos/Tutorial/pt-br.md) | [Results](CSharpLessons/SoaVsAos/Benchmark.md) | Hot channel packing & AVX2 `Vector<float>` |
+
+### 3. Dispatch & Control Flow
+
+*Planned:* virtual and interface dispatch vs. devirtualization, branch prediction, and delegate overhead.
+
+### 4. Concurrency & Serialization
+
+*Planned:* lock contention, `ValueTask` vs. `Task`, and low-allocation serialization pipelines.
 
 
 ## Getting started
