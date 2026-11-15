@@ -41,6 +41,29 @@ namespace CSharpLessons.Tests.HotPathAllocations
         }
 
         [Fact]
+        public void QueryActiveNonAlloc_AllocatesZeroBytes_WhileNaiveLinqAllocates()
+        {
+            var world = new EntityWorld(500);
+            var scratch = new List<int>(500);
+
+            // Warm up JIT before measuring thread allocations
+            HotPathQueries.QueryActiveNonAlloc(world.Entities, 20f, scratch);
+            _ = HotPathQueries.QueryActiveNaive(world.Entities, 20f);
+
+            long nonAllocBefore = GC.GetAllocatedBytesForCurrentThread();
+            HotPathQueries.QueryActiveNonAlloc(world.Entities, 20f, scratch);
+            long nonAllocAfter = GC.GetAllocatedBytesForCurrentThread();
+
+            long naiveBefore = GC.GetAllocatedBytesForCurrentThread();
+            var naiveResult = HotPathQueries.QueryActiveNaive(world.Entities, 20f);
+            long naiveAfter = GC.GetAllocatedBytesForCurrentThread();
+
+            Assert.Equal(0, nonAllocAfter - nonAllocBefore);
+            Assert.True(naiveAfter - naiveBefore > 0);
+            Assert.Equal(naiveResult, scratch);
+        }
+
+        [Fact]
         public void QueryActive_EmptyAndNoMatches_ReturnsEmpty()
         {
             var empty = Array.Empty<Entity>();

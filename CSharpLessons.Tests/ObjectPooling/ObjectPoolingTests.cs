@@ -91,5 +91,48 @@ namespace CSharpLessons.Tests.ObjectPooling
             Assert.Equal(0, pool.ActiveCount);
             Assert.Equal(batchSize, pool.AvailableCount);
         }
+
+        [Fact]
+        public void RentAndReturn_RepeatedFullCapacityCycles_AllocateZeroBytes_WhileNaiveAllocates()
+        {
+            const int capacity = 32;
+            var pool = CreatePool(capacity);
+            var rented = new Projectile[capacity];
+
+            // Warm up pool rent/return and naive path
+            for (int i = 0; i < capacity; i++)
+            {
+                rented[i] = pool.Rent();
+            }
+            for (int i = 0; i < capacity; i++)
+            {
+                pool.Return(rented[i]);
+            }
+            _ = ProjectileSimulation.RunNaive(capacity, 2, 2, 0.016f);
+
+            long poolBefore = GC.GetAllocatedBytesForCurrentThread();
+            for (int cycle = 0; cycle < 10; cycle++)
+            {
+                for (int i = 0; i < capacity; i++)
+                {
+                    rented[i] = pool.Rent();
+                    rented[i].Activate(i, i, 1f, 1f, 2);
+                }
+                for (int i = 0; i < capacity; i++)
+                {
+                    pool.Return(rented[i]);
+                }
+            }
+            long poolAfter = GC.GetAllocatedBytesForCurrentThread();
+
+            long naiveBefore = GC.GetAllocatedBytesForCurrentThread();
+            _ = ProjectileSimulation.RunNaive(capacity, 2, 2, 0.016f);
+            long naiveAfter = GC.GetAllocatedBytesForCurrentThread();
+
+            Assert.Equal(0, poolAfter - poolBefore);
+            Assert.True(naiveAfter - naiveBefore > 0);
+            Assert.Equal(0, pool.ActiveCount);
+            Assert.Equal(capacity, pool.AvailableCount);
+        }
     }
 }
