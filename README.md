@@ -52,6 +52,18 @@ scripts/check                                   # build (warnings as errors) + u
 dotnet run --project CSharpLessons -c Release   # run the benchmarks (Release only; takes minutes)
 ```
 
+`Program.cs` forwards CLI arguments to BenchmarkDotNet's `BenchmarkSwitcher`, so you can filter
+lessons, shorten jobs, or enable memory and disassembly diagnostics on demand:
+
+```bash
+dotnet run --project CSharpLessons -c Release -- --filter "*SoaVsAos*" --job short --disasm
+dotnet run --project CSharpLessons -c Release -- --filter "*Boxing*" --job short --memory
+```
+
+`--disasm` enables BenchmarkDotNet's `DisassemblyDiagnoser` and exports the JIT-compiled machine
+code under `BenchmarkDotNet.Artifacts/results/` (useful for inspecting SIMD vectorization and
+bounds-check elimination).
+
 ## Project structure
 
 Each topic is a lesson: a folder under `CSharpLessons/` with practical examples, a tutorial and
