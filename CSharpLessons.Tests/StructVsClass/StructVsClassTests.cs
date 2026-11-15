@@ -1,3 +1,4 @@
+using System;
 using CSharpLessons.StructVsClass.Data;
 using Xunit;
 
@@ -115,6 +116,37 @@ namespace CSharpLessons.Tests.StructVsClass
 
             Assert.Equal(posClass[0].X, posStruct[0].X);
             Assert.Equal(posClass[0].Y, posStruct[0].Y);
+        }
+
+        [Fact]
+        public void EntityTransformSimulator_StructPath_AllocatesZeroBytes_WhileClassPathAllocates()
+        {
+            const int count = 250;
+            const float dt = 0.016f;
+
+            var (cPos, cVel) = EntityTransformSimulator.CreateClassEntities(count);
+            var (sPos, sVel) = EntityTransformSimulator.CreateStructEntities(count);
+
+            // Warm up JIT before measuring thread allocations
+            EntityTransformSimulator.IntegrateClass(cPos, cVel, dt);
+            _ = EntityTransformSimulator.SumClass(cPos);
+            EntityTransformSimulator.IntegrateStruct(sPos, sVel, dt);
+            _ = EntityTransformSimulator.SumStruct(sPos);
+
+            long structBefore = GC.GetAllocatedBytesForCurrentThread();
+            EntityTransformSimulator.IntegrateStruct(sPos, sVel, dt);
+            Vec2Struct structSum = EntityTransformSimulator.SumStruct(sPos);
+            long structAfter = GC.GetAllocatedBytesForCurrentThread();
+
+            long classBefore = GC.GetAllocatedBytesForCurrentThread();
+            EntityTransformSimulator.IntegrateClass(cPos, cVel, dt);
+            Vec2Class classSum = EntityTransformSimulator.SumClass(cPos);
+            long classAfter = GC.GetAllocatedBytesForCurrentThread();
+
+            Assert.Equal(0, structAfter - structBefore);
+            Assert.True(classAfter - classBefore > 0);
+            Assert.Equal(classSum.X, structSum.X, 3);
+            Assert.Equal(classSum.Y, structSum.Y, 3);
         }
     }
 }
