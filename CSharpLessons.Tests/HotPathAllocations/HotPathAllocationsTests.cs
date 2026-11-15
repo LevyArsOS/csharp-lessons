@@ -29,8 +29,8 @@ namespace CSharpLessons.Tests.HotPathAllocations
 
             float naiveChecksum = HotPathQueries.RunNaiveLinqFrameLoop(world, frames, minEnergy);
 
-            // Warmup call before measuring thread allocations
-            _ = HotPathQueries.RunZeroAllocFrameLoop(world, 1, minEnergy, scratch);
+            // Warm up full frame count before measuring thread allocations so TieredCompilation settles.
+            _ = HotPathQueries.RunZeroAllocFrameLoop(world, frames, minEnergy, scratch);
 
             long before = GC.GetAllocatedBytesForCurrentThread();
             float zeroAllocChecksum = HotPathQueries.RunZeroAllocFrameLoop(world, frames, minEnergy, scratch);
