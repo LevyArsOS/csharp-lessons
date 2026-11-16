@@ -15,13 +15,13 @@
 
 Imagine uma cozinha movimentada em que, a cada pedido de sopa, o cozinheiro compra uma tigela de cerâmica nova, serve o cliente e joga a tigela no lixo quando ele termina. Comprar uma tigela é rápido no começo, até a lixeira encher e toda a cozinha precisar parar para levar o lixo ao aterro.
 
-Em um jogo a 60 FPS (orçamento de `16,6 ms` por frame) ou simulação a 120 FPS (`8,3 ms`), criar centenas de projéteis ou partículas por frame com `new Projectile()` repete exatamente esse desperdício. Embora o alocador bump-pointer do .NET 9 torne cada `new` isolado barato, o descarte contínuo (`~804 KB` a cada `20.000` disparos em [Benchmark.md](../Benchmark.md)) enche a Geração 0 (Gen0) rapidamente, forçando coletas Gen0 e Gen1 que disputam o orçamento do frame.
+Em um jogo a 60 FPS (orçamento de `16,6 ms` por frame) ou simulação a 120 FPS (`8,3 ms`), criar centenas de projéteis ou partículas por frame com `new Projectile()` repete exatamente esse desperdício. Embora o alocador **bump-pointer** do .NET 9 (que aloca novos objetos apenas avançando um ponteiro de memória) torne cada `new` isolado barato, o descarte contínuo (`~804 KB` a cada `20.000` disparos em [Benchmark.md](../Benchmark.md)) enche a Geração 0 (Gen0) rapidamente, forçando coletas Gen0 e Gen1 que disputam o orçamento do frame.
 
 ---
 
 ## Mecânica de Memória e Garbage Collector
 
-Cada instância de `Projectile` vive no heap gerenciado com 16 bytes de cabeçalho .NET + ponteiro de MethodTable, somados aos 24 bytes de campos (`X`, `Y`, `Vx`, `Vy`, `RemainingFrames`, `Active`), totalizando `40 bytes` por objeto em .NET 64 bits. Sem pooling, cada disparo avança o ponteiro de alocação da Gen0; quando a Gen0 lota, o GC pausa as threads gerenciadas para rastrear referências vivas e compactar o lixo.
+Cada instância de `Projectile` vive no heap gerenciado com 16 bytes de cabeçalho .NET + ponteiro de MethodTable (o descritor de tipo em runtime), somados aos 24 bytes de campos (`X`, `Y`, `Vx`, `Vy`, `RemainingFrames`, `Active`), totalizando `40 bytes` por objeto em .NET 64 bits. Sem pooling, cada disparo avança o ponteiro de alocação da Gen0; quando a Gen0 lota, o GC pausa as threads gerenciadas para rastrear referências vivas e compactar o lixo.
 
 ```text
 Abordagem Ingênua (descarte por frame):
@@ -34,12 +34,22 @@ Com Pool (reúso em regime permanente):
 
 ```mermaid
 flowchart LR
-    subgraph SceneLoad["Carga da Cena (Alocação Única)"]
-        Factory["new Projectile() x Capacity"] --> Stack["Stack&lt;Projectile&gt; (_available)"]
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph Naive["Ingênuo: Descarte por Frame (804.056 B / 20k spawns)"]
+        N1["new Projectile() x 500/lote"]:::slow -->|"Enche a Gen0"| N2["Coletas Gen0 / Gen1<br/>Pausas imprevisíveis"]:::warn
     end
-    subgraph FrameLoop["Loop por Frame (0 B Alocados)"]
-        Stack -->|"Rent() O(1)"| Active["Lista activeScratch"]
-        Active -->|"Step(dt) e Swap-and-Pop"| Reset["onReset(item)"]
+
+    subgraph SceneLoad["Pooled: Carga da Cena (Alocação Única)"]
+        Factory["new Projectile() x Capacity"]:::hw --> Stack["Stack&lt;Projectile&gt;<br/>(pool _available)"]:::fast
+    end
+
+    subgraph FrameLoop["Pooled: Loop por Frame (0 B Alocados)"]
+        Stack -->|"Rent() O(1)"| Active["Lista activeScratch<br/>Step(dt) + Swap-and-Pop"]:::hw
+        Active -->|"Despawn"| Reset["onReset(item)<br/>Limpa estado"]:::fast
         Reset -->|"Return(item) O(1)"| Stack
     end
 ```

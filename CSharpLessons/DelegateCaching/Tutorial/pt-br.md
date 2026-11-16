@@ -33,27 +33,32 @@ Quando isso executa uma vez no clique de um botão, a alocação é irrelevante.
 
 ## O Que Realmente Acontece por Baixo dos Panos?
 
-Quando uma lambda captura variáveis locais ou `this`, o Roslyn gera uma classe oculta no heap (`<>c__DisplayClass`) e instancia `new Action<int>(displayClass.<Method>b__0)` a cada iteração.
+Quando uma lambda captura variáveis locais ou `this`, o Roslyn (o compilador C#) gera uma classe de closure oculta no heap (`<>c__DisplayClass`) para guardar essas variáveis e instancia `new Action<int>(displayClass.<Method>b__0)` a cada iteração.
 
 ```mermaid
 flowchart LR
-    subgraph Naive["Ingênuo: Lambda com Captura (~1.04 MB / 10.000 eventos)"]
-        N1["Iteração i do loop"] --> N2["Aloca <>c__DisplayClass (entities, ev, mod)"]
-        N2 --> N3["Aloca new Action<int>"]
-        N3 --> N4["Invoca stub virtual do delegate"]
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph Naive["Ingênuo: Lambda com Captura (~1,04 MB / 10.000 eventos)"]
+        N1["Iteração i do loop"]:::hw --> N2["Aloca objeto de closure<br/>&lt;&gt;c__DisplayClass (entities, ev, mod)"]:::slow
+        N2 --> N3["Aloca new Action&lt;int&gt;<br/>Wrapper de delegate no heap"]:::slow
+        N3 --> N4["Chamada indireta via delegate<br/>Sem inlining do JIT"]:::warn
     end
 
     subgraph Optimized["Otimizado: Despacho Sem Alocação (0 B)"]
-        O1["Delegate static em cache: 1 campo em <>O"] --> O4["Chamada direta (0 B)"]
-        O2["Struct restrita: where T : struct, IListener"] --> O5["RyuJIT desvirtualiza + inline (0 B)"]
-        O3["Ponteiro de função: delegate* managed<...>"] --> O6["Instrução IL calli (0 B)"]
+        O1["Delegate static em cache<br/>1 campo estático alocado 1 vez"]:::fast --> O4["Chamada direta (0 B)"]:::fast
+        O2["Struct restrita<br/>where T : struct, IListener"]:::hw --> O5["RyuJIT desvirtualiza + inline (0 B)<br/>Mais rápido: 114,9 us"]:::fast
+        O3["Ponteiro de função<br/>delegate* managed&lt;...&gt;"]:::hw --> O6["Instrução IL calli (0 B)<br/>Sem objeto Delegate"]:::fast
     end
 ```
 
 Em contraste:
-1. **Lambdas `static`** (`static (...) => ...`) têm garantia do compilador de não capturar **nada** e ficam em cache em um único campo estático.
-2. **Listeners em `struct` genérica restrita** (`where TListener : struct, IGameplayEventListener`) permitem ao RyuJIT emitir chamadas sem boxing e aplicar *inlining* direto no loop.
-3. **`delegate* managed<...>`** emite uma instrução `calli` direta sem objeto `Delegate` no heap.
+1. **Lambdas `static`** (`static (...) => ...`) têm garantia do compilador de não capturar **nada** e ficam em cache em um único campo estático oculto.
+2. **Listeners em `struct` genérica restrita** (`where TListener : struct, IGameplayEventListener`) permitem ao **RyuJIT** (compilador JIT do .NET) **desvirtualizar** a chamada (resolver o método concreto da struct na compilação, evitando busca de interface) e aplicar *inlining* direto no loop.
+3. **`delegate* managed<...>`** emite uma instrução IL **`calli`** (chamada indireta por endereço bruto de função), sem nenhum objeto `Delegate` no heap.
 
 ---
 

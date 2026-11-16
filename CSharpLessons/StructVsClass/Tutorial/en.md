@@ -7,7 +7,8 @@
 - [Memory Layout and Object Overhead](#memory-layout-and-object-overhead)
 - [Array Layout and Cache Locality](#array-layout-and-cache-locality)
 - [Garbage Collection and Frame Budgets](#garbage-collection-and-frame-budgets)
-- [Best Practices for Structs](#best-practices-for-structs)
+- [Best Practices and When NOT to Use Structs](#best-practices-and-when-not-to-use-structs)
+- [Profiling and Diagnostics](#profiling-and-diagnostics)
 - [Summary](#summary)
 
 ---
@@ -33,22 +34,25 @@ In real-time systems and game loops running at 60 FPS (16.6 ms budget) or 120 FP
 
 ## Memory Layout and Object Overhead
 
-Every heap object in 64-bit .NET requires an object header (8 bytes) and a method table pointer (8 bytes). For a class containing two 32-bit `float` fields (8 bytes total):
+Every heap object in 64-bit .NET carries two hidden metadata fields before your own data: an **object header** (8 bytes, used for locks and GC state) and a **MethodTable pointer** (8 bytes, telling the runtime which type the object is). For a class containing two 32-bit `float` fields (8 bytes total):
 
-- **`Vec2Class` instance**: 8 (header) + 8 (method table) + 8 (fields) = **24 bytes** on the heap, plus the 8-byte reference variable itself (32 bytes total).
+- **`Vec2Class` instance**: 8 (header) + 8 (MethodTable) + 8 (fields) = **24 bytes** on the heap, plus the 8-byte reference variable itself (32 bytes total).
 - **`Vec2Struct` instance**: exactly **8 bytes** with zero metadata overhead.
 
 ```mermaid
-flowchart TD
-    subgraph ClassLayout["Vec2Class Array (Scattered Heap)"]
-        A["Array: [Ptr 0, Ptr 1, ...]"] --> H0["Heap Object 0 (24B)"]
-        A --> H1["Heap Object 1 (24B)"]
-        H0 --> D0["[Header | MethodTable | X | Y]"]
-        H1 --> D1["[Header | MethodTable | X | Y]"]
+flowchart LR
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph ClassLayout["Vec2Class[] (Scattered Heap Objects)"]
+        A["Array of Pointers<br/>[Ptr 0 | Ptr 1 | ...]"]:::warn -->|"Cache miss"| H0["Heap Object 0 (24 B)<br/>[Header | MethodTable | X0 | Y0]"]:::slow
+        A -->|"Cache miss"| H1["Heap Object 1 (24 B)<br/>[Header | MethodTable | X1 | Y1]"]:::slow
     end
 
-    subgraph StructLayout["Vec2Struct Array (Contiguous Memory)"]
-        S["Array Data Buffer: [X0, Y0, X1, Y1, X2, Y2, ...]"]
+    subgraph StructLayout["Vec2Struct[] (Contiguous Inline Buffer)"]
+        S["Single 64 B Cache Line (holds 8 vectors!)<br/>[X0, Y0 | X1, Y1 | X2, Y2 | ... | X7, Y7]"]:::fast -->|"Hardware prefetcher"| CPU["CPU L1 Cache<br/>Linear streaming"]:::hw
     end
 ```
 
@@ -72,18 +76,35 @@ When allocating an array of 100,000 vectors:
 
 ## Garbage Collection and Frame Budgets
 
-When vectors are immutable and perform addition (`a + b`), a class implementation returns `new Vec2Class(...)`. Integrating 100,000 entities per frame creates 100,000 short-lived objects per frame (~2.4 to 4.8 MB/frame). At 60 FPS, this translates to hundreds of megabytes per second, triggering Gen0 and Gen1 garbage collections that stall the main thread and drop frames.
+When vectors are immutable and perform addition (`a + b`), a class implementation returns `new Vec2Class(...)`. Integrating 100,000 entities per frame creates 100,000 short-lived objects per frame (~2.4 to 4.8 MB/frame). At 60 FPS, this translates to hundreds of megabytes per second, filling **Gen0** (Generation 0, where newly allocated objects live) and **Gen1** (survivors of Gen0) so fast that the Garbage Collector must pause the main thread and drop frames.
 
 Using `readonly struct Vec2Struct` eliminates heap allocations entirely (0 B allocated), guaranteeing zero GC pauses from physics and transform updates.
 
 ---
 
-## Best Practices for Structs
+## Best Practices and When NOT to Use Structs
 
-1. **Mark structs as `readonly`**: Enforces immutability and prevents defensive copying by the compiler when passing with `in` or accessing `readonly` fields.
-2. **Implement `IEquatable<T>`**: Prevents boxing when calling `Equals` or using collections like `HashSet<T>` and `Dictionary<TKey, TValue>`.
+1. **Mark structs as `readonly`**: Enforces immutability and prevents **defensive copying** (where the compiler silently copies the whole struct before calling a method on a `readonly` field or `in` parameter).
+2. **Implement `IEquatable<T>`**: Prevents **boxing** (wrapping a value type inside a heap object) when calling `Equals` or using collections like `HashSet<T>` and `Dictionary<TKey, TValue>`.
 3. **Keep size small**: Microsoft guidelines recommend structs remain at or below 16 bytes for optimal pass-by-value efficiency.
 4. **Pass with `in` for larger structs**: For structs larger than 16 bytes, use `in` parameters to pass by readonly reference without copying.
+5. **When NOT to use**: Use `class` when you need **reference identity** (multiple systems pointing to and mutating the same entity), polymorphism/inheritance, or when objects are large (> 64 bytes) and long-lived.
+
+---
+
+## Profiling and Diagnostics
+
+Verify allocation differences and cache behavior using BenchmarkDotNet and .NET runtime counters:
+
+```bash
+# Run StructVsClass benchmark with memory diagnoser
+dotnet run --project CSharpLessons -c Release -- --filter "*StructVsClass*" --job short --memory
+
+# Monitor live allocation rate and Gen0/Gen1 collections
+dotnet-counters monitor --process-id <PID> --counters System.Runtime[alloc-rate,gen-0-gc-count,gen-1-gc-count]
+```
+
+In unit tests, assert `0 B` allocated around struct math loops with `GC.GetAllocatedBytesForCurrentThread()`, or use **PerfView** (`GC Heap Alloc Stacks`) to spot accidental boxing or `new Class(...)` allocations in hot paths.
 
 ---
 

@@ -28,7 +28,7 @@ Modern CPUs are orders of magnitude faster than main memory (DRAM):
 - **L3 cache**: ~15–20 ns (~40 cycles), shared across cores
 - **Main RAM (DRAM)**: ~60–100 ns (~200+ cycles)
 
-When the CPU reads a single `float`, it never fetches just 4 bytes from RAM—it fetches an entire **64-byte cache line**. In [ParticleClass.cs](../Data/ParticleClass.cs), each heap object has a 16-byte .NET header + MethodTable pointer plus 28 bytes of fields (`44 B`, padded to `48 B` on 64-bit), plus an `8 B` pointer in `List<ParticleClass>`. Worse, as `CreateClassList(..., scatterHeap: true)` simulates, objects allocated over time sit at non-contiguous heap addresses, causing **pointer chasing** and constant L1/L2/L3 cache misses.
+When the CPU reads a single `float`, it never fetches just 4 bytes from RAM—it fetches an entire **64-byte cache line**. In [ParticleClass.cs](../Data/ParticleClass.cs), each heap object has a 16-byte .NET header + MethodTable pointer (which identifies the object's runtime type) plus 28 bytes of fields (`44 B`, padded to `48 B` on 64-bit), plus an `8 B` pointer in `List<ParticleClass>`. Worse, as `CreateClassList(..., scatterHeap: true)` simulates, objects allocated over time sit at non-contiguous heap addresses, causing **pointer chasing** and constant L1/L2/L3 cache misses.
 
 ```text
 List<ParticleClass> (Pointer Chasing):
@@ -39,14 +39,20 @@ ParticleStruct[] (Contiguous 28 B structs):
 ```
 
 ```mermaid
-flowchart TD
-    subgraph Scattered["List&lt;ParticleClass&gt; (12.811 ms)"]
-        L["Internal Array: [Ptr 0, Ptr 1, Ptr 2]"] -->|"Random Jump"| H0["Heap 0x1040: Header + Particle 0"]
-        L -->|"Random Jump"| H1["Heap 0x8F20: Header + Particle 1"]
-        L -->|"Random Jump"| H2["Heap 0x3A80: Header + Particle 2"]
+flowchart LR
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph Scattered["List&lt;ParticleClass&gt; (12.811 ms | Pointer Chasing)"]
+        L["Internal Array<br/>[Ptr 0 | Ptr 1 | Ptr 2]"]:::warn -->|"Cache miss"| H0["Heap 0x1040 (48 B)<br/>Header + Particle 0"]:::slow
+        L -->|"Cache miss"| H1["Heap 0x8F20 (48 B)<br/>Header + Particle 1"]:::slow
+        L -->|"Cache miss"| H2["Heap 0x3A80 (48 B)<br/>Header + Particle 2"]:::slow
     end
-    subgraph Contiguous["ParticleStruct[] (3.787 ms)"]
-        C["Contiguous Buffer: [P0 (28B) | P1 (28B) | P2 (28B) | ...]"]
+
+    subgraph Contiguous["ParticleStruct[] (3.787 ms | 3.38x Faster)"]
+        C["64 B Cache Line<br/>[P0 (28B) | P1 (28B) | P2...]"]:::fast -->|"Hardware prefetcher"| CPU["CPU L1 Cache<br/>Linear streaming"]:::hw
     end
 ```
 

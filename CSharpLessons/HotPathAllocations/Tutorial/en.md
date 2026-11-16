@@ -15,7 +15,7 @@
 
 Imagine a librarian who, every single minute, buys a brand-new notebook, copies down the IDs of every active book, reads the list once, and throws the notebook in the shredder. Even if each notebook is small, buying and shredding 60 notebooks per second creates a mountain of paper waste.
 
-In a 60 FPS game loop (`Update()` in Unity or `_Process()` in Godot), your code has `16.6 ms` per frame. Calling `.Where(...).Select(...).ToList()` on every tick is that disposable-notebook habit: it looks clean on one line, but allocates iterator state machines, closure objects, and fresh `List<int>` backing arrays every frame. Across `1,000` entities over `60` frames in [Benchmark.md](../Benchmark.md), that generates `149,280 B` (`~145.8 KB`) of short-lived Gen0 garbage every second.
+In a 60 FPS game loop (`Update()` in Unity or `_Process()` in Godot), your code has `16.6 ms` per frame. Calling `.Where(...).Select(...).ToList()` on every tick is that disposable-notebook habit: it looks clean on one line, but allocates iterator state machines, closure objects, and fresh `List<int>` backing arrays every frame. Across `1,000` entities over `60` frames in [Benchmark.md](../Benchmark.md), that generates `149,280 B` (`~145.8 KB`) of short-lived **Gen0** (Generation 0, the nursery heap for newly created objects) garbage every second.
 
 ---
 
@@ -38,13 +38,19 @@ NonAlloc Scratch Buffer (steady state):
 
 ```mermaid
 flowchart LR
-    subgraph Naive["NaiveLinqFrameLoop (149,280 B / 60 frames)"]
-        W["Entity[]"] -->|"Where + Closure"| WI["WhereIterator (Heap)"]
-        WI -->|"Select"| SI["SelectIterator (Heap)"]
-        SI -->|"ToList()"| L["new List&lt;int&gt; + int[]"]
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph Naive["NaiveLinqFrameLoop (242.01 us | 149,280 B / 60 frames)"]
+        W["Entity[]"]:::hw -->|"Where + Closure"| WI["WhereIterator + DisplayClass<br/>(Heap allocated)"]:::slow
+        WI -->|"Select"| SI["SelectIterator<br/>(Heap allocated)"]:::slow
+        SI -->|"ToList()"| L["new List&lt;int&gt; + int[] resizes<br/>(Gen0 GC pressure)"]:::warn
     end
-    subgraph ZeroAlloc["ZeroAllocFrameLoop (0 B / 60 frames)"]
-        W2["Entity[]"] -->|"for loop (no closure)"| S["Pre-allocated List&lt;int&gt;"]
+
+    subgraph ZeroAlloc["ZeroAllocFrameLoop (96.94 us | 0 B / 60 frames)"]
+        W2["Entity[]"]:::hw -->|"Indexed for loop<br/>(no closure)"| S["Pre-allocated List&lt;int&gt;<br/>Reused backing int[]"]:::fast
         S -->|"Clear() resets _size = 0"| W2
     end
 ```

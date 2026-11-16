@@ -33,27 +33,32 @@ When this runs once on a UI button click, the allocation is negligible. When it 
 
 ## What Actually Happens Under the Hood?
 
-When a lambda captures local variables or `this`, Roslyn rewrites it into a hidden heap-allocated class (`<>c__DisplayClass`) and instantiates `new Action<int>(displayClass.<Method>b__0)` on every iteration.
+When a lambda captures local variables or `this`, Roslyn (the C# compiler) rewrites it into a hidden heap-allocated closure class (`<>c__DisplayClass`) to hold those variables and instantiates `new Action<int>(displayClass.<Method>b__0)` on every iteration.
 
 ```mermaid
 flowchart LR
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
     subgraph Naive["Naive: Capturing Lambda (~1.04 MB / 10,000 events)"]
-        N1["Loop iteration i"] --> N2["Allocate <>c__DisplayClass (entities, ev, mod)"]
-        N2 --> N3["Allocate new Action<int>"]
-        N3 --> N4["Invoke virtual delegate stub"]
+        N1["Loop iteration i"]:::hw --> N2["Allocate closure object<br/>&lt;&gt;c__DisplayClass (entities, ev, mod)"]:::slow
+        N2 --> N3["Allocate new Action&lt;int&gt;<br/>Delegate wrapper on heap"]:::slow
+        N3 --> N4["Indirect delegate call<br/>No JIT inlining"]:::warn
     end
 
     subgraph Optimized["Optimized: Zero-Allocation Dispatch (0 B)"]
-        O1["Cached static delegate: 1 field in <>O"] --> O4["Direct call (0 B)"]
-        O2["Constrained struct: where T : struct, IListener"] --> O5["RyuJIT devirtualized + inlined (0 B)"]
-        O3["Function pointer: delegate* managed<...>"] --> O6["IL calli instruction (0 B)"]
+        O1["Cached static delegate<br/>1 static field allocated once"]:::fast --> O4["Direct delegate call (0 B)"]:::fast
+        O2["Constrained struct<br/>where T : struct, IListener"]:::hw --> O5["RyuJIT devirtualized + inlined (0 B)<br/>Fastest: 114.9 us"]:::fast
+        O3["Function pointer<br/>delegate* managed&lt;...&gt;"]:::hw --> O6["IL calli instruction (0 B)<br/>No Delegate object"]:::fast
     end
 ```
 
 In contrast:
-1. **`static` lambdas** (`static (...) => ...`) are guaranteed by the compiler to capture **nothing** and are cached once in a static field.
-2. **Constrained generic struct listeners** (`where TListener : struct, IGameplayEventListener`) allow RyuJIT to emit a specialized non-boxing call and inline the listener body directly into the loop.
-3. **`delegate* managed<...>`** emits a direct `calli` instruction with no delegate object wrapper at all.
+1. **`static` lambdas** (`static (...) => ...`) are guaranteed by the compiler to capture **nothing** and are cached once in a hidden static field.
+2. **Constrained generic struct listeners** (`where TListener : struct, IGameplayEventListener`) allow **RyuJIT** (the .NET JIT compiler) to **devirtualize** (resolve the concrete struct method at compile time instead of doing an interface lookup) and **inline** the listener body directly into the loop.
+3. **`delegate* managed<...>`** emits a direct **`calli`** (call indirect) IL instruction using a raw function address with no heap-allocated `Delegate` wrapper at all.
 
 ---
 
