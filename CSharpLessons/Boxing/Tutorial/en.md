@@ -49,52 +49,23 @@ When boxing occurs, the value is copied from the stack (where value types are st
 The diagram below illustrates what happens in memory during the boxing process:
 
 ```mermaid
-block-beta
-    columns 3
+flowchart LR
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
 
-    block:antes
-        columns 3
-        block:stackAntes
-            columns 1
-            id1(["Stack"])
-            empty1["..."]
-            var1["int i = 123"]
-            empty2["..."]
-            empty22["<br>..."]
-        end
-        space
-        block:heapAntes
-            columns 1
-            id2(["Heap"])
-            empty3["..."]
-            empty4["..."]
-            empty44["..."]
-            empty45["<br>..."]
-        end
+    subgraph Before["Before Boxing"]
+        S1["Stack<br/>int i = 123 (4 B value)"]:::hw
+        H1["Managed Heap<br/>(no allocation)"]:::fast
     end
-    
-    right<["Boxing"]>(right)
-    
-    block:depois
-        columns 3
-        block:stackDepois
-            columns 1
-            id3(["Stack"])
-            empty5["..."]
-            var3["int i = 123"]
-            var4["object o"]
-            empty6["..."]
-        end
-        space
-        block:heapDepois
-            columns 1
-            id4(["Heap"])
-            empty7["..."]
-            empty8["..."]
-            obj["object:<br/>Value: 123"]
-            empty9["..."]
-        end
-        var4 -- " reference" --> obj
+
+    Before -->|"object o = i;<br/>(Boxing copies value to Heap)"| After
+
+    subgraph After["After Boxing"]
+        S2["Stack<br/>int i = 123 (unchanged)<br/>object o (8 B pointer)"]:::hw
+        H2["Managed Heap (24 B)<br/>[Header | MethodTable | Value: 123]"]:::slow
+        S2 -->|"Reference"| H2
     end
 ```
 
