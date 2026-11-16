@@ -39,12 +39,18 @@ SoA (linha de cache de 64 B em PosX[] - 16 partículas por linha):
 
 ```mermaid
 flowchart LR
-    subgraph AoS["ParticleAos[] (12,238 ms)"]
-        A0["Linha 64B: 20B Quentes + 44B Frios"] -->|"1 partícula / linha"| CPU1["ALU Escalar"]
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph AoS["ParticleAos[] (12,238 ms | 68,75% Banda Desperdiçada)"]
+        A0["Linha de Cache 64 B<br/>20 B Quentes + 44 B Frios"]:::slow -->|"1 partícula / linha"| CPU1["ALU Escalar<br/>(1 float por vez)"]:::warn
     end
-    subgraph SoA["ParticleSoa (2,380 ms com SIMD)"]
-        S0["PosX[]: 16 floats / linha 64B"] -->|"8 floats / load"| SIMD["AVX2 Vector&lt;float&gt; (8-wide)"]
-        S1["VelX[]: 16 floats / linha 64B"] -->|"8 floats / load"| SIMD
+
+    subgraph SoA["ParticleSoa + SIMD (2,380 ms | 5,14x Mais Rápido)"]
+        S0["PosX[] Linha 64 B<br/>16 floats juntos (100% úteis)"]:::fast -->|"8 floats / load"| SIMD["AVX2 Vector&lt;float&gt;<br/>(8 floats em 1 instrução)"]:::hw
+        S1["VelX[] Linha 64 B<br/>16 floats juntos (100% úteis)"]:::fast -->|"8 floats / load"| SIMD
     end
 ```
 

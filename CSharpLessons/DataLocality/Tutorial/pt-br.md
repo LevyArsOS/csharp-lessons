@@ -28,7 +28,7 @@ CPUs modernas são ordens de grandeza mais rápidas que a memória principal (DR
 - **Cache L3**: ~15–20 ns (~40 ciclos), compartilhado entre núcleos
 - **RAM Principal (DRAM)**: ~60–100 ns (~200+ ciclos)
 
-Quando a CPU lê um único `float`, ela nunca busca apenas 4 bytes na RAM — ela traz uma **linha de cache inteira de 64 bytes**. Em [ParticleClass.cs](../Data/ParticleClass.cs), cada objeto no heap carrega 16 bytes de cabeçalho .NET + ponteiro de MethodTable mais 28 bytes de campos (`44 B`, alinhados para `48 B` em 64 bits), além de `8 B` do ponteiro na `List<ParticleClass>`. Como `CreateClassList(..., scatterHeap: true)` simula, objetos alocados ao longo do tempo ficam espalhados pelo heap, causando **pointer chasing** e cache misses constantes em L1/L2/L3.
+Quando a CPU lê um único `float`, ela nunca busca apenas 4 bytes na RAM — ela traz uma **linha de cache inteira de 64 bytes**. Em [ParticleClass.cs](../Data/ParticleClass.cs), cada objeto no heap carrega 16 bytes de cabeçalho .NET + ponteiro de MethodTable (que identifica o tipo do objeto em runtime) mais 28 bytes de campos (`44 B`, alinhados para `48 B` em 64 bits), além de `8 B` do ponteiro na `List<ParticleClass>`. Como `CreateClassList(..., scatterHeap: true)` simula, objetos alocados ao longo do tempo ficam espalhados pelo heap, causando **pointer chasing** e cache misses constantes em L1/L2/L3.
 
 ```text
 List<ParticleClass> (Pointer Chasing):
@@ -39,14 +39,20 @@ ParticleStruct[] (Structs contíguas de 28 B):
 ```
 
 ```mermaid
-flowchart TD
-    subgraph Scattered["List&lt;ParticleClass&gt; (12,811 ms)"]
-        L["Array Interno: [Ptr 0, Ptr 1, Ptr 2]"] -->|"Salto Aleatório"| H0["Heap 0x1040: Header + Partícula 0"]
-        L -->|"Salto Aleatório"| H1["Heap 0x8F20: Header + Partícula 1"]
-        L -->|"Salto Aleatório"| H2["Heap 0x3A80: Header + Partícula 2"]
+flowchart LR
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph Scattered["List&lt;ParticleClass&gt; (12,811 ms | Pointer Chasing)"]
+        L["Array Interno<br/>[Ptr 0 | Ptr 1 | Ptr 2]"]:::warn -->|"Cache miss"| H0["Heap 0x1040 (48 B)<br/>Header + Partícula 0"]:::slow
+        L -->|"Cache miss"| H1["Heap 0x8F20 (48 B)<br/>Header + Partícula 1"]:::slow
+        L -->|"Cache miss"| H2["Heap 0x3A80 (48 B)<br/>Header + Partícula 2"]:::slow
     end
-    subgraph Contiguous["ParticleStruct[] (3,787 ms)"]
-        C["Buffer Contíguo: [P0 (28B) | P1 (28B) | P2 (28B) | ...]"]
+
+    subgraph Contiguous["ParticleStruct[] (3,787 ms | 3,38x Mais Rápido)"]
+        C["Linha de Cache 64 B<br/>[P0 (28B) | P1 (28B) | P2...]"]:::fast -->|"Hardware prefetcher"| CPU["Cache L1 da CPU<br/>Leitura linear"]:::hw
     end
 ```
 
