@@ -51,7 +51,9 @@ Lessons are organized into progressive learning paths—starting from allocation
 
 ### 3. Dispatch & Control Flow
 
-*Planned:* virtual and interface dispatch vs. devirtualization, branch prediction, and delegate overhead.
+| Lesson | Tutorial | Benchmark | Focus |
+|---|---|---|---|
+| Delegate Caching | [English](CSharpLessons/DelegateCaching/Tutorial/en.md) · [Português](CSharpLessons/DelegateCaching/Tutorial/pt-br.md) | [Results](CSharpLessons/DelegateCaching/Benchmark.md) | Cached `static` delegates, constrained structs, & `delegate*` |
 
 ### 4. Concurrency & Serialization
 
