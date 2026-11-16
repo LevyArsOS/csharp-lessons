@@ -7,7 +7,8 @@
 - [Layout de Memória e Sobrecarga de Objeto](#layout-de-memória-e-sobrecarga-de-objeto)
 - [Layout em Arrays e Localidade de Cache](#layout-em-arrays-e-localidade-de-cache)
 - [Coleta de Lixo e Orçamento de Frame](#coleta-de-lixo-e-orçamento-de-frame)
-- [Boas Práticas com Structs](#boas-práticas-com-structs)
+- [Boas Práticas e Quando NÃO Usar Structs](#boas-práticas-e-quando-não-usar-structs)
+- [Profiling e Diagnóstico](#profiling-e-diagnóstico)
 - [Resumo](#resumo)
 
 ---
@@ -33,22 +34,25 @@ Em sistemas de tempo real e loops de jogos executando a 60 FPS (orçamento de 16
 
 ## Layout de Memória e Sobrecarga de Objeto
 
-No .NET de 64 bits, todo objeto na heap requer um cabeçalho de objeto (8 bytes) e um ponteiro para a Method Table (8 bytes). Para uma classe contendo dois campos `float` de 32 bits (8 bytes no total):
+No .NET de 64 bits, todo objeto na heap carrega dois campos ocultos de metadados antes dos seus dados: um **cabeçalho de objeto** (8 bytes, usado para locks e estado do GC) e um **ponteiro para a MethodTable** (8 bytes, que informa ao runtime qual é o tipo do objeto). Para uma classe contendo dois campos `float` de 32 bits (8 bytes no total):
 
-- **Instância de `Vec2Class`**: 8 (cabeçalho) + 8 (method table) + 8 (campos) = **24 bytes** na heap, somados aos 8 bytes do ponteiro da variável (32 bytes ao todo).
+- **Instância de `Vec2Class`**: 8 (cabeçalho) + 8 (MethodTable) + 8 (campos) = **24 bytes** na heap, somados aos 8 bytes do ponteiro da variável (32 bytes ao todo).
 - **Instância de `Vec2Struct`**: exatamente **8 bytes**, sem nenhum metadado adicional.
 
 ```mermaid
-flowchart TD
-    subgraph ClassLayout["Array de Vec2Class (Heap Fragmentada)"]
-        A["Array: [Ponteiro 0, Ponteiro 1, ...]"] --> H0["Objeto Heap 0 (24B)"]
-        A --> H1["Objeto Heap 1 (24B)"]
-        H0 --> D0["[Cabeçalho | MethodTable | X | Y]"]
-        H1 --> D1["[Cabeçalho | MethodTable | X | Y]"]
+flowchart LR
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph ClassLayout["Vec2Class[] (Objetos Espalhados na Heap)"]
+        A["Array de Ponteiros<br/>[Ptr 0 | Ptr 1 | ...]"]:::warn -->|"Cache miss"| H0["Objeto Heap 0 (24 B)<br/>[Header | MethodTable | X0 | Y0]"]:::slow
+        A -->|"Cache miss"| H1["Objeto Heap 1 (24 B)<br/>[Header | MethodTable | X1 | Y1]"]:::slow
     end
 
-    subgraph StructLayout["Array de Vec2Struct (Memória Contígua)"]
-        S["Buffer de Dados do Array: [X0, Y0, X1, Y1, X2, Y2, ...]"]
+    subgraph StructLayout["Vec2Struct[] (Buffer Contíguo em Linha)"]
+        S["Linha de Cache 64 B (comporta 8 vetores!)<br/>[X0, Y0 | X1, Y1 | X2, Y2 | ... | X7, Y7]"]:::fast -->|"Hardware prefetcher"| CPU["Cache L1 da CPU<br/>Leitura linear"]:::hw
     end
 ```
 
@@ -72,18 +76,35 @@ Ao alocar um array de 100.000 vetores:
 
 ## Coleta de Lixo e Orçamento de Frame
 
-Quando vetores são imutáveis e implementam soma (`a + b`), a classe retorna `new Vec2Class(...)`. Integrar a física de 100.000 entidades por frame gera 100.000 objetos temporários a cada 16.6 ms (~2.4 a 4.8 MB/frame). Isso sobrecarrega a Gen0/Gen1 do GC, gerando pausas (GC spikes) que quebram a taxa de quadros.
+Quando vetores são imutáveis e implementam soma (`a + b`), a classe retorna `new Vec2Class(...)`. Integrar a física de 100.000 entidades por frame gera 100.000 objetos temporários a cada 16.6 ms (~2.4 a 4.8 MB/frame). Isso lota rapidamente a **Gen0** (Geração 0, onde nascem objetos novos) e a **Gen1** (sobreviventes da Gen0) do GC, gerando pausas (GC spikes) que quebram a taxa de quadros.
 
 Com `readonly struct Vec2Struct`, alocações na heap são reduzidas a **0 bytes**, eliminando coletas de lixo originadas do loop de atualização.
 
 ---
 
-## Boas Práticas com Structs
+## Boas Práticas e Quando NÃO Usar Structs
 
-1. **Declare como `readonly struct`**: Garante imutabilidade e impede que o compilador crie cópias defensivas ao usar parâmetros `in` ou acessar campos readonly.
-2. **Implemente `IEquatable<T>`**: Evita boxing ao chamar `Equals` ou usar coleções genéricas como `HashSet<T>` e `Dictionary<TKey, TValue>`.
+1. **Declare como `readonly struct`**: Garante imutabilidade e impede **cópias defensivas** (quando o compilador copia a struct inteira silenciosamente ao chamar um método em campo `readonly` ou parâmetro `in`).
+2. **Implemente `IEquatable<T>`**: Evita **boxing** (embrulhar um tipo de valor em um objeto na heap) ao chamar `Equals` ou usar coleções genéricas como `HashSet<T>` e `Dictionary<TKey, TValue>`.
 3. **Mantenha o tamanho compacto**: Recomenda-se manter structs com até 16 bytes para passagem eficiente por valor.
 4. **Use `in` para structs maiores**: Para tipos com mais de 16 bytes, passe por referência somente leitura (`in`) para evitar custo de cópia de memória.
+5. **Quando NÃO usar**: Use `class` quando precisar de **identidade por referência** (vários sistemas apontando e alterando a mesma entidade), herança/polimorfismo ou quando os objetos forem grandes (> 64 bytes) e de vida longa.
+
+---
+
+## Profiling e Diagnóstico
+
+Valide diferenças de alocação e comportamento de cache usando BenchmarkDotNet e contadores do runtime .NET:
+
+```bash
+# Executar benchmark StructVsClass com diagnóstico de memória
+dotnet run --project CSharpLessons -c Release -- --filter "*StructVsClass*" --job short --memory
+
+# Monitorar taxa de alocação e coletas Gen0/Gen1 em tempo real
+dotnet-counters monitor --process-id <PID> --counters System.Runtime[alloc-rate,gen-0-gc-count,gen-1-gc-count]
+```
+
+Em testes unitários, confirme `0 B` alocados em loops com structs usando `GC.GetAllocatedBytesForCurrentThread()`, ou use **PerfView** (`GC Heap Alloc Stacks`) para encontrar boxing acidental ou alocações `new Class(...)` em hot paths.
 
 ---
 
