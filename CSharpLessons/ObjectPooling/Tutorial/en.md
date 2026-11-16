@@ -15,13 +15,13 @@
 
 Imagine a busy kitchen where every time a customer orders soup, the chef buys a brand-new ceramic bowl, serves the soup, and throws the bowl into a dumpster when the customer finishes. Buying a bowl is fast at first, until the dumpster overflows and the whole kitchen has to stop cooking while the staff hauls trash to the landfill.
 
-In a 60 FPS game (`16.6 ms` frame budget) or 120 FPS simulation (`8.3 ms` budget), spawning hundreds of projectiles, particles, or hit markers per frame with `new Projectile()` is that disposable-bowl kitchen. Even though .NET 9's bump-pointer allocator makes a single `new` cheap, sustained churn (`~804 KB` per `20,000` spawns in [Benchmark.md](../Benchmark.md)) fills Generation 0 (Gen0) repeatedly, triggering Gen0 and Gen1 Garbage Collector (GC) sweeps that compete directly with your frame budget.
+In a 60 FPS game (`16.6 ms` frame budget) or 120 FPS simulation (`8.3 ms` budget), spawning hundreds of projectiles, particles, or hit markers per frame with `new Projectile()` is that disposable-bowl kitchen. Even though .NET 9's **bump-pointer allocator** (which allocates new objects by simply advancing a memory pointer) makes a single `new` cheap, sustained churn (`~804 KB` per `20,000` spawns in [Benchmark.md](../Benchmark.md)) fills Generation 0 (Gen0) repeatedly, triggering Gen0 and Gen1 Garbage Collector (GC) sweeps that compete directly with your frame budget.
 
 ---
 
 ## Memory and GC Mechanics
 
-Every `Projectile` instance lives on the managed heap with a 16-byte .NET object header and MethodTable pointer plus its 24 bytes of fields (`X`, `Y`, `Vx`, `Vy`, `RemainingFrames`, `Active`), totaling `40 bytes` per object on 64-bit .NET. Without pooling, each spawn advances the Gen0 allocation pointer; once Gen0 fills, the GC pauses managed threads to trace live references and compact dead memory.
+Every `Projectile` instance lives on the managed heap with a 16-byte .NET object header and MethodTable pointer (the runtime type descriptor) plus its 24 bytes of fields (`X`, `Y`, `Vx`, `Vy`, `RemainingFrames`, `Active`), totaling `40 bytes` per object on 64-bit .NET. Without pooling, each spawn advances the Gen0 allocation pointer; once Gen0 fills, the GC pauses managed threads to trace live references and compact dead memory.
 
 ```text
 Naive (per-frame churn):
@@ -34,12 +34,22 @@ Pooled (steady-state reuse):
 
 ```mermaid
 flowchart LR
-    subgraph SceneLoad["Scene Load (One-Time Allocation)"]
-        Factory["new Projectile() x Capacity"] --> Stack["Stack&lt;Projectile&gt; (_available)"]
+    classDef slow fill:#fee2e2,stroke:#dc2626,color:#111827
+    classDef fast fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef hw fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef warn fill:#fef3c7,stroke:#d97706,color:#111827
+
+    subgraph Naive["Naive: Per-Frame Churn (804,056 B / 20k spawns)"]
+        N1["new Projectile() x 500/batch"]:::slow -->|"Fills Gen0"| N2["Gen0 / Gen1 GC Sweeps<br/>Unpredictable pauses"]:::warn
     end
-    subgraph FrameLoop["Per-Frame Loop (0 B Allocated)"]
-        Stack -->|"Rent() O(1)"| Active["activeScratch List"]
-        Active -->|"Step(dt) & Swap-and-Pop"| Reset["onReset(item)"]
+
+    subgraph SceneLoad["Pooled: Scene Load (One-Time)"]
+        Factory["new Projectile() x Capacity"]:::hw --> Stack["Stack&lt;Projectile&gt;<br/>(_available pool)"]:::fast
+    end
+
+    subgraph FrameLoop["Pooled: Per-Frame Loop (0 B Allocated)"]
+        Stack -->|"Rent() O(1)"| Active["activeScratch List<br/>Step(dt) + Swap-and-Pop"]:::hw
+        Active -->|"Despawn"| Reset["onReset(item)<br/>Clear state"]:::fast
         Reset -->|"Return(item) O(1)"| Stack
     end
 ```
