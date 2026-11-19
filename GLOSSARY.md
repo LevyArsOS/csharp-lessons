@@ -22,4 +22,5 @@ exactly; a concept that needs a sentence to explain gets an entry here instead.
 | SIMD (SoA) | Single Instruction, Multiple Data vector operations (`Vector<float>`) over parallel Structure-of-Arrays channels | Scalar Array-of-Structures loop |
 | Span formatting (`TryFormat`) | Writing formatted text directly into a caller-supplied `Span<char>` buffer via `ISpanFormattable.TryFormat` with zero heap allocations | Allocating new `string` instances via `+` or `ToString()` |
 | Closure display class | Compiler-generated heap class (`<>c__DisplayClass`) holding variables captured by an inline lambda or anonymous method | Passing explicit parameters to a cached `static` delegate |
+| Sparse set | Dual-array ECS container pairing an `entityId`-indexed `_sparse` array with packed `_denseEntities` and `_denseComponents` arrays for $O(1)$ lookup, $O(1)$ swap-and-pop removal, and contiguous `Span<T>` iteration | Hash-bucketed `Dictionary<int, T>` |
 

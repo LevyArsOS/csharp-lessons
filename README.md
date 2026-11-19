@@ -48,6 +48,7 @@ Lessons are organized into progressive learning paths—starting from allocation
 |---|---|---|---|
 | Data Locality | [English](CSharpLessons/DataLocality/Tutorial/en.md) · [Português](CSharpLessons/DataLocality/Tutorial/pt-br.md) | [Results](CSharpLessons/DataLocality/Benchmark.md) | Contiguous `struct[]` vs scattered `List<class>` |
 | SoA vs AoS (SIMD) | [English](CSharpLessons/SoaVsAos/Tutorial/en.md) · [Português](CSharpLessons/SoaVsAos/Tutorial/pt-br.md) | [Results](CSharpLessons/SoaVsAos/Benchmark.md) | Hot channel packing & AVX2 `Vector<float>` |
+| Sparse Set | [English](CSharpLessons/SparseSet/Tutorial/en.md) · [Português](CSharpLessons/SparseSet/Tutorial/pt-br.md) | [Results](CSharpLessons/SparseSet/Benchmark.md) | Dense ECS `Span<T>` pools & $O(1)$ swap-and-pop |
 
 ### 3. Dispatch & Control Flow
 
